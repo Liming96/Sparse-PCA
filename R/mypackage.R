@@ -47,19 +47,14 @@ bsPCA <- function(x,k=ncol(x),type=c("Gram","predictor"),lambda=10000,ncomp=min(
   sc <- attr(X, "scaled:scale")
 
   Xp <- matrix(NA,nrow=nrow(x),ncol=ncol(x))
-  Sp <- matrix(NA,nrow=nrow(x),ncol=ncol(x))
-  if(type=="predictor"){
-    Xp <- X
-  }else{
-    Sp <- X
-  }
+  Xp <- X
 
   svdobj <- svd(X) # singualr value decomposition
   v <- svdobj$v # the PC of classical pca,If x is covariance matrix锛寁 is the same.
   totalvariance <- sum((svdobj$d)^2) # the totalvariance of x
   alpha <- as.matrix(v[,1:ncomp,drop=FALSE])
 
-  W <- matrix(0,p, ncomp) # initialize PCs matrix
+  W <- matrix(0,p,ncomp) # initialize PCs matrix
   sdev <- rep(0,ncomp)# additional explanation standard deviation
 
   ccs <- seq(ncomp)# Generate a vector of length ncomp
@@ -70,18 +65,18 @@ bsPCA <- function(x,k=ncol(x),type=c("Gram","predictor"),lambda=10000,ncomp=min(
       W[,cc] <- w
       sdev[cc] <- t(Xp%*%w)%*%(Xp%*%w)
     }else{
-      res <- spca2(Sp,sparsity=k[cc],lambda,bess_tol,bess_maxiter)
+      res <- spca2(Xp,sparsity=k[cc],lambda,bess_tol,bess_maxiter)
       w <- res$w
       W[,cc] <- w
-      sdev[cc] <- t(Sp%*%w)%*%(Sp%*%w)
+      sdev[cc] <- t(Xp%*%w)%*%(Xp%*%w)
     }
 
     # deflate the data matrix or covariance matrix
     if(type=="predictor"){
       Xp <- Xp-X%*%w%*%t(w)
     }else{
-      temp <- (t(w)%*%Sp%*%w)[1]
-      Sp <- Sp-temp*w%*%t(w)
+      temp <- (t(w)%*%Xp%*%w)[1]
+      Xp <- Xp-temp*w%*%t(w)
     }
 
     if(type=="predictor"){
@@ -89,7 +84,7 @@ bsPCA <- function(x,k=ncol(x),type=c("Gram","predictor"),lambda=10000,ncomp=min(
         W <- W[,1:cc,drop=FALSE]
         break
       }
-    }else if(cc < ncomp && all(abs(Sp)<1e-14)){
+    }else if(cc < ncomp && all(abs(Xp)<1e-14)){
       W <- W[,1:cc,drop=FALSE]
       break
     }
