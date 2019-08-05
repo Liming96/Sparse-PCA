@@ -1,0 +1,43 @@
+Exchange1 <- function(Xp,w,sparsity,sacrifice,residual,active,lambda){
+  n <- nrow(Xp)
+  p <- ncol(Xp)
+  obj <- -t(w)%*%t(Xp)%*%Xp%*%w+lambda*(t(w)%*%w-1)
+  w_new <- w
+  c <- 1
+  m <- sort(sacrifice,decreasing=T)
+  while(c < min(sparsity,p-sparsity)){
+    ##Determine the active subset and inactive subset for exchange
+    Exch_active <- active & (sacrifice < m[sparsity-c])
+    Exch_inactive <- !active & (sacrifice >= m[sparsity+c])
+    ##Exchange the subset
+    active_new <- active & !Exch_active | Exch_inactive
+    ##Update the active sset and inactive set
+    w_new[!active_new] <- 0
+    x <- Xp[,active_new,drop=FALSE]
+    svd_act <- svd(x)
+    w_new[active_new] <- svd_act$v[,1]
+    ##Compute the objective function value
+    obj_new <- -t(w_new)%*%t(Xp)%*%Xp%*%w_new+lambda*(t(w_new)%*%w_new-1)
+
+    if(obj > obj_new){
+      obj <- obj_new
+      active <- active_new
+      w <- w_new
+    }
+    c <- c+1
+  }
+
+  ##Update residual
+  for(j in 1:p){
+    if(active[j]){
+      residual[j] <- 0
+    }else{
+      residual[j] <- (lambda*w[j]-t(Xp[,j])%*%Xp%*%w)/(n-lambda)
+    }
+  }
+  ##Update sacrifice
+  for(j in 1:p){
+    sacrifice[j] <- (lambda-n)*(w[j]+residual[j])^2
+  }
+  return(list(w=w,sacrifice=sacrifice,active=active,obj=obj))
+}

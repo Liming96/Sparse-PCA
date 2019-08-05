@@ -1,0 +1,16 @@
+---
+title: "bsPCA"
+author: "LiMing"
+date: "2019年8月5日"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## How to use?
+The bsPCA algorithm compute Sparse PCA based on BESS method.
+
+
+

@@ -1,0 +1,317 @@
+######bspca????????Э????????????####
+
+setwd("C:/Users/lidam/Desktop/paper/code/ABessPCA")
+
+##???????ͺ???
+source("ABessPCA.R")
+source("spca_cov.R")
+source("spca_pre.R")
+source("Exchange_pre.R")
+source("Exchange_cov.R")
+library(elasticnet)
+library(pcaPP)
+library(nsprcomp)
+source("scree.R")
+
+########################################################################
+###pitpropsЭ????????
+########################################################################
+
+data("pitprops")
+dim <- dim(pitprops)
+x <- pitprops #????????????Э????????
+
+
+##??????ʯͼ 
+##Classical PCA
+##princomp
+pca_princomp <- princomp(covmat = x)
+screeplot(pca_princomp,type = "lines")
+##prcomp
+pca_prcomp<-prcomp(x)
+screeplot(pca_prcomp,type = "lines")
+
+#???ú???ABessPCA????
+bess <- ABessPCA(x,k=c(7,4,4,4,1,1,1,1,1,1),type="Gram")
+screeplot(bess,type="lines")
+ 
+##R??elasticnet
+sparsity <- rep(7,10)
+rem <- spca(x,K=10,type="Gram",sparse="varnum",para=c(7,4,4,4,1,1,1,1,1,1))
+W_rem <- rem$loadings
+scree_rem <- scree(x,W_rem,type="Gram")
+screeplot(scree_rem,type="lines")
+
+##????R??nsprcomp??????֤,?Ƿ?????ֱ??Ӧ??Э????????
+pm <- nsprcomp(x,k=c(7,4,4,4,1,1,1,1,1,1))
+W_pm <- pm$rotation
+scree_pm <- scree(x,W_pm,type="Gram")
+screeplot(scree_pm,type="lines")
+
+##R??pcaPP,??ô??????????
+vm <- sPCAgrid (x,k=10,lambda=1,method="sd")
+W_vm <- vm$loadings
+scree_vm <- scree(x,W_vm,type="Gram")
+screeplot(scree_vm,type="lines")
+
+########################################################################
+
+##????loadings
+##???ú???ABessPCA????
+bbess <- ABessPCA(x,k=c(7,4,4),type="Gram",center.=FALSE)
+b_bess <- bbess$rotation[,1:3]
+
+##R??elasticnet
+rem <- spca(x,K=3,,type="predictor",sparse="varnum",para=c(7,4,4))
+b_rem <- rem$loadings[,1:3]
+
+
+##????R??nsprcomp??????֤
+pm <- nsprcomp(x,k=c(7,4,4))
+b_pm <- pm$rotation[,1:3]
+
+
+##R??pcaPP,??ô??????????
+vm <- sPCAgrid (x,k=3,lambda=c(2,1,1),method="sd")
+b_vm <- vm$loadings[,1:3]
+
+
+SPCA_v <- matrix(NA,13,12)
+rownames(SPCA_v) <- row.names(pitprops)
+SPCA_v[,1:3] <- b_bess
+SPCA_v[,4:6] <- b_rem
+SPCA_v[,7:9] <- b_pm
+SPCA_v[,10:12] <- b_vm
+
+write.csv(SPCA_v,file="SPCA_pitprops.csv")
+
+
+########################################################################
+###nutrient???ݾ???
+########################################################################
+
+##????nutrient???ݾ???
+xdata <- read.csv("usda_nutrient.csv",row.name = 1,header=T)
+x <- data.matrix(xdata)
+x[is.na(x)] <- 0
+
+##??????ʯͼ
+##Classical PCA
+##princomp
+pca_princomp <- princomp(x)
+screeplot(pca_princomp,type = "lines")
+##prcomp
+pca_prcomp<-prcomp(x)
+screeplot(pca_prcomp,type = "lines")
+
+##???ú???ABessPCA????
+bbess <- ABessPCA(x,k=c(10,10,9,9,8,8,7,6,6,6),type="predictor",scale.=TRUE)
+screeplot(bbess,type="lines")
+
+#?ø???Ч?ʵķ????????���????
+x2 <- t(x)%*%x
+bbess2 <- ABessPCA(x2,k=c(10,10,9,9,8,8,7,6,6,6),type="Gram")
+screeplot(bbess2,type="lines")
+
+##R??elasticnet
+sparsity <- rep(10,10)
+rem <- spca(x,K=10,type="predictor",sparse="varnum",trace=FALSE,
+            para=sparsity)
+W_rem <- rem$loadings
+scree_rem <- scree(x,W_rem,type="predictor")
+screeplot(scree_rem,type="lines")
+#????Э????????
+s <- t(x)%*%x
+rem <- spca(s,K=10,type="Gram",sparse="varnum",trace=FALSE,
+            para=sparsity)
+W_rem <- rem$loadings
+scree_rem <- scree(s,W_rem,type="Gram")
+screeplot(scree_rem,type="lines")
+
+##????R??nsprcomp??????֤
+pm <- nsprcomp(x,k=c(10,10,9,9,8,8,7,6,6,6),scale.=TRUE)#ֱ????k=10????TRUE/FALSE????
+W_pm <- pm$rotation
+scree_pm <- scree(x,W_pm,type="predictor")
+screeplot(scree_pm,type="lines")
+
+##R??pcaPP,??ô??????????
+vm <- sPCAgrid (x,k=10,lambda=0.8,method="sd")
+W_vm <- vm$loadings
+scree_vm <- scree(x,W_vm,type="predictor")
+screeplot(scree_vm,type="lines") 
+
+########################################################################
+
+##????loadings
+##???ú???ABessPCA????
+bbess <- ABessPCA(x,k=c(10,10,9),type="predictor",scale.=TRUE)
+b_bess <- bbess$rotation[,1:3]
+
+##R??elasticnet
+rem <- spca(x,K=3,type="predictor",sparse="varnum",trace=FALSE,
+            para=c(10,10,9))
+c <- rank(-rem$pev)
+b_rem <- matrix(NA,38,3)
+for(i in 1:3){
+  b_rem[,c[i]] <- rem$loadings[,i]
+}
+
+##????R??nsprcomp??????֤
+pm <- nsprcomp(x,k=c(10,10,9),scale.=TRUE)
+b <- pm$rotation[,1:3]
+d <- rep(NA,3)
+d[1] <- t(b[,1])%*%t(x)%*%x%*%b[,1]
+d[2] <- t(b[,2])%*%t(x)%*%x%*%b[,2]
+d[3] <- t(b[,3])%*%t(x)%*%x%*%b[,3]
+m <- rank(-d)
+b_pm <- matrix(NA,38,3)
+b_pm[,m[1]]<- b[,1]
+b_pm[,m[2]]<- b[,2]
+b_pm[,m[3]]<- b[,3]
+
+##R??pcaPP,??ô??????????
+k.max <- 3
+oBIC <- opt.BIC (x,k.max=3,method = "sd")
+for (i in 1:k.max){
+  plot (oBIC, k = i, f.x = "lambda")
+}
+for (i in 1:k.max){
+  objplot (oBIC, k = i)
+}
+vm <- sPCAgrid (x,k=3,lambda=2.83,method="sd")
+b_vm <- vm$loadings[,1:3]
+
+SPCA_b <- matrix(NA,38,12)
+SPCA_b[,1:3] <- b_bess
+SPCA_b[,4:6] <- b_rem
+SPCA_b[,7:9] <- b_pm
+SPCA_b[,10:12] <- b_vm
+
+write.csv(SPCA_b,file="SPCA_nutrient.csv")
+
+
+########################################################################
+###mtcars????
+########################################################################
+
+data("mtcars")
+x <- as.matrix(mtcars) #????????????Э????????
+
+
+##??????ʯͼ
+##Classical PCA
+##princomp
+pca_princomp <- princomp(x)
+screeplot(pca_princomp,type = "lines")
+##prcomp
+pca_prcomp<-prcomp(x)
+screeplot(pca_prcomp,type = "lines")
+
+##???ú???ABessPCA????
+bbess <- ABessPCA(x,k=4,type="predictor",scale.=TRUE)
+screeplot(bbess,type="lines")
+
+##R??elasticnet
+sparsity <- rep(4,10)
+rem <- spca(x,K=10,type="predictor",sparse="varnum",trace=FALSE,
+            para=sparsity)
+W_rem <- rem$loadings
+scree_rem <- scree(x,W_rem)
+screeplot(scree_rem,type="lines")
+
+
+##????R??nsprcomp??????֤
+pm <- nsprcomp(x,k=sparsity,scale.=TRUE)#ֱ????k=10????TRUE/FALSE????
+W_pm <- pm$rotation
+scree_pm <- scree(x,W_pm)
+screeplot(scree_pm,type="lines")
+
+##R??pcaPP,??ô??????????
+vm <- sPCAgrid (x,k=10,lambda=0.8,method="sd")
+W_vm <- vm$loadings
+scree_vm <- scree(x,W_vm)
+screeplot(scree_vm,type="lines") 
+
+
+
+
+########################################################################
+
+##????loadings
+
+##???ú???ABessPCA????
+bbess <- ABessPCA(x,k=c(4,4,3),type="predictor",scale.=TRUE)
+b_bess <- bbess$rotation[,1:3]
+
+##R??elasticnet
+rem <- spca(x,K=3,type="predictor",sparse="varnum",trace=FALSE,
+            para=c(4,4,3))
+b_rem <- rem$loadings
+
+
+##????R??nsprcomp??????֤
+pm <- nsprcomp(x,k=c(4,4,3),scale.=TRUE)
+b_pm <- pm$rotation
+
+
+##R??pcaPP,??ô??????????
+k.max <- 3
+oBIC <- opt.BIC (x,k.max=3,method = "sd")
+for (i in 1:k.max){
+  plot (oBIC, k = i, f.x = "lambda")
+}
+for (i in 1:k.max){
+  objplot (oBIC, k = i)
+}
+vm <- sPCAgrid (x,k=3,lambda=0.83,method="sd")
+b_vm <- vm$loadings[,1:3]
+
+##prcomp
+pca_prcomp<-prcomp(x)
+b_pca <- pca_prcomp$rotation[,1:3]
+
+SPCA_b <- matrix(NA,11,15)
+SPCA_b[,1:3] <- b_bess
+SPCA_b[,4:6] <- b_rem
+SPCA_b[,7:9] <- b_pm
+SPCA_b[,10:12] <- b_vm
+SPCA_b[,13:15] <- b_pca
+
+write.csv(SPCA_b,file="SPCA_mtcars.csv")
+
+########################################################################
+library(devtools)
+install_github("vqv/ggbiplot")
+library(ggbiplot)
+
+
+
+##????biplot
+##Classical PCA
+##prcomp
+pca_prcomp<-prcomp(x)
+ggbiplot(pca_prcomp)
+
+##???ú???ABessPCA????
+bbess <- ABessPCA(x,k=4,type="predictor",scale.=TRUE)
+ggbiplot(bbess)
+
+##R??elasticnet
+sparsity <- rep(4,11)
+rem <- spca(x,K=11,type="predictor",sparse="varnum",trace=FALSE,
+            para=sparsity)
+ggbiplot(rem)
+
+##????R??nsprcomp??????֤
+pm <- nsprcomp(x,k=sparsity,scale.=TRUE)#ֱ????k=10????TRUE/FALSE????
+ggbiplot(pm)
+
+##R??pcaPP,??ô??????????
+vm <- sPCAgrid (x,k=10,lambda=0.8,method="sd")
+ggbiplot(vm)
+
+ggbiplot(pca_prcomp)
+ggbiplot(bbess)
+ggbiplot(pca_prcomp)
+ggbiplot(pca_prcomp)
+ggbiplot(pca_prcomp)

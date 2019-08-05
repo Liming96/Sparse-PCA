@@ -1,0 +1,45 @@
+spca2 <- function(Sp,sparsity,lambda,bess_tol=1e-3,
+                     bess_maxiter=100){
+
+  p <- dim(Sp)[2]
+  residual <- rep(1,p)#Define residual
+  sacrifice <- rep(1,p)#Define sacrifice
+  active <- rep(1,p)#Define active set and inactive set
+
+  w <- rep(1/p,p)
+  for(j in 1:p){
+    residual[j] <- (lambda*w[j]-t(Sp[,j])%*%w)/(Sp[j,j] - lambda)
+  }
+  for(j in 1:p){
+    sacrifice[j] <- (lambda-Sp[j,j])*(w[j]+residual[j])^2
+  }
+  m <- sort(sacrifice,decreasing=T)
+  active <- sacrifice >= m[sparsity]
+  ##update active set and inactive set
+  w[!active] <- 0
+  svd_act <- svd(Sp[,active,drop=FALSE])
+  w[active] <- svd_act$v[,1]
+
+  obj_old <- 0
+  ii <- 0
+
+  while(ii <= bess_maxiter){
+    wt <- w
+    res <- Exchange2(Sp,w,sparsity,sacrifice,residual,active,lambda)
+    w <- res$w
+    sacrifice <- res$sacrifice
+    active <- res$active
+
+    obj <- -t(w)%*%Sp%*%w+lambda*(t(w)%*%w-1)
+    if(abs((obj-obj_old)/obj) < bess_tol){
+      break
+    }else{
+      ii <- ii + 1
+    }
+    obj_old <- obj
+  }
+  w <- w/sqrt(sum(w^2)) #normalize
+  return(list(w=w,obj=obj))
+}
+
+
