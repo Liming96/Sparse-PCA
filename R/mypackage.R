@@ -68,7 +68,6 @@ bsPCA <- function(x,k=ncol(x),type=c("Gram","predictor"),lambda=10000,ncomp=min(
       res <- spca2(Xp,sparsity=k[cc],lambda,bess_tol,bess_maxiter)
       w <- res$w
       W[,cc] <- w
-      sdev[cc] <- t(Xp%*%w)%*%(Xp%*%w)
     }
 
     # deflate the data matrix or covariance matrix
@@ -89,6 +88,11 @@ bsPCA <- function(x,k=ncol(x),type=c("Gram","predictor"),lambda=10000,ncomp=min(
       break
     }
   }
+
+  Z <- Xp%*%W
+  qrZ <- qr(Z)
+  RqrZ <- qr.R(qrZ)
+  sdev <- diag(RqrZ)^2
 
   bspc <- list(sdev=sdev,rotation=W,X = Xp)
   return(bspc)
