@@ -130,7 +130,7 @@ spca1 <- function(Xp,sparsity,lambda,bess_tol=1e-3,bess_maxiter=100){
     active <- res$active
 
     obj <- -t(w)%*%t(Xp)%*%Xp%*%w+lambda*(t(w)%*%w-1)
-    if(abs((obj-obj_old)/obj) < bess_tol){
+    if(abs((obj-obj_old)/(obj+0.01)) < bess_tol){
       break
     }else{
       ii <- ii + 1
@@ -225,7 +225,7 @@ spca2 <- function(Sp,sparsity,lambda,bess_tol=1e-3,
     active <- res$active
 
     obj <- -t(w)%*%Sp%*%w+lambda*(t(w)%*%w-1)
-    if(abs((obj-obj_old)/obj) < bess_tol){
+    if(abs((obj-obj_old)/(obj+0.01)) < bess_tol){
       break
     }else{
       ii <- ii + 1
